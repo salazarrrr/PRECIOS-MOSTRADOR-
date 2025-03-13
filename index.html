@@ -1,165 +1,256 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Precios Mostrador</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            margin: 20px;
-        }
-        h2 {
-            color: #333;
-        }
-        input {
-            padding: 10px;
-            margin: 5px;
-            width: 200px;
-        }
-        button {
-            padding: 10px 15px;
-            margin: 5px;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .add-btn { background-color: #28a745; }
-        .add-btn:hover { background-color: #218838; }
-        .edit-btn { background-color: #ffc107; }
-        .edit-btn:hover { background-color: #e0a800; }
-        .save-btn { background-color: #007bff; display: none; }
-        .save-btn:hover { background-color: #0056b3; }
-        .delete-btn { background-color: #dc3545; }
-        .delete-btn:hover { background-color: #c82333; }
-        table {
-            width: 80%;
-            margin: 20px auto;
-            border-collapse: collapse;
-            background: white;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Precios Mostrador</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      text-align: center;
+      margin: 20px;
+    }
+    h2 {
+      color: #333;
+    }
+    input {
+      padding: 10px;
+      margin: 5px;
+      width: 200px;
+    }
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .add-btn { background-color: #28a745; }
+    .add-btn:hover { background-color: #218838; }
+    .edit-btn { background-color: #ffc107; }
+    .edit-btn:hover { background-color: #e0a800; }
+    .save-btn { background-color: #007bff; display: none; }
+    .save-btn:hover { background-color: #0056b3; }
+    .delete-btn { background-color: #dc3545; }
+    .delete-btn:hover { background-color: #c82333; }
+    table {
+      width: 80%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    /* Estilos para la sección de autenticación */
+    #login-container, #user-info {
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
-    <h2>Precios mostrador</h2>
+  <!-- Sección de inicio de sesión -->
+  <div id="login-container">
+    <h2>Iniciar Sesión</h2>
+    <input type="email" id="email" placeholder="Correo Electrónico">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="loginBtn" onclick="iniciarSesion()">Iniciar Sesión</button>
+  </div>
+  <div id="user-info" style="display:none;">
+    <p id="user-email"></p>
+    <button onclick="cerrarSesion()">Cerrar Sesión</button>
+  </div>
+
+  <h2>Precios mostrador</h2>
+
+  <!-- Sección solo para administradores (para agregar productos) -->
+  <div id="admin-section" style="display:none;">
     <input type="text" id="nombreProducto" placeholder="Nombre del producto" onkeypress="pasarAlSiguiente(event, 'valorUnitario')">
     <input type="number" id="valorUnitario" placeholder="Vr. unitario + IVA" onkeypress="pasarAlSiguiente(event, 'agregarBtn')">
     <button id="agregarBtn" class="add-btn" onclick="agregarProducto()">Agregar</button>
+  </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Nombre del Producto</th>
-                <th>Vr. unitario + IVA</th>
-                <th>Precio Mostrador</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="tablaProductos"></tbody>
-    </table>
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre del Producto</th>
+        <th>Vr. unitario + IVA</th>
+        <th>Precio Mostrador</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaProductos"></tbody>
+  </table>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, orderBy, query } 
-        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  <script type="module">
+    // Importar módulos de Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, orderBy, query } 
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } 
+      from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBfri6ETUB88xjJlgJ8EkWfXuy8BMtp4L0",
-            authDomain: "gestion-productos-dea81.firebaseapp.com",
-            projectId: "gestion-productos-dea81",
-            storageBucket: "gestion-productos-dea81.appspot.com",
-            messagingSenderId: "117677631974",
-            appId: "1:117677631974:web:82e2c42c12b86f803ace27"
-        };
+    // Configuración de Firebase (reemplaza con tus datos)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfri6ETUB88xjJlgJ8EkWfXuy8BMtp4L0",
+      authDomain: "gestion-productos-dea81.firebaseapp.com",
+      projectId: "gestion-productos-dea81",
+      storageBucket: "gestion-productos-dea81.appspot.com",
+      messagingSenderId: "117677631974",
+      appId: "1:117677631974:web:82e2c42c12b86f803ace27"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-        window.agregarProducto = async function () {
-            let nombre = document.getElementById("nombreProducto").value.trim();
-            let valor = parseFloat(document.getElementById("valorUnitario").value);
+    // Definir el UID autorizado (reemplaza "TU_UID_AQUI" por tu UID real)
+    let isAdmin = false;
+    const allowedUID = "JSuy8hl5x8SBEiylIN8EQ5Mw3c72";
 
-            if (nombre === "" || isNaN(valor)) {
-                alert("Por favor, ingrese datos válidos.");
-                return;
-            }
-
-            await addDoc(collection(db, "productos"), { nombre, valor });
-            document.getElementById("nombreProducto").value = "";
-            document.getElementById("valorUnitario").value = "";
-            document.getElementById("nombreProducto").focus();
-        };
-
-        window.pasarAlSiguiente = function (event, siguienteId) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                document.getElementById(siguienteId).focus();
-            }
-        };
-
-        const q = query(collection(db, "productos"), orderBy("nombre"));
-        onSnapshot(q, (snapshot) => {
-            let tabla = document.getElementById("tablaProductos");
-            tabla.innerHTML = "";
-
-            snapshot.forEach(docSnap => {
-                let data = docSnap.data();
-                let id = docSnap.id;
-                let calculo = (data.valor / 0.7).toFixed(2);
-
-                let fila = `<tr>
-                    <td>${data.nombre}</td>
-                    <td>
-                        <span id="valor-${id}">${data.valor}</span>
-                        <input type="number" id="input-${id}" value="${data.valor}" style="display:none; width:80px;">
-                    </td>
-                    <td id="calculo-${id}">${calculo}</td>
-                    <td>
-                        <button class="edit-btn" onclick="habilitarEdicion('${id}')">Editar</button>
-                        <button class="save-btn" id="save-${id}" onclick="guardarEdicion('${id}')">Guardar</button>
-                        <button class="delete-btn" onclick="confirmarEliminacion('${id}')">Eliminar</button>
-                    </td>
-                </tr>`;
-                
-                tabla.innerHTML += fila;
-            });
+    // Función para iniciar sesión
+    window.iniciarSesion = function() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          document.getElementById("login-container").style.display = "none";
+          document.getElementById("user-info").style.display = "block";
+          document.getElementById("user-email").textContent = "Usuario: " + user.email;
+          checkAdmin(user);
+        })
+        .catch((error) => {
+          console.error("Error al iniciar sesión:", error);
+          alert("Error: " + error.message);
         });
+    };
 
-        window.habilitarEdicion = function (id) {
-            document.getElementById(`valor-${id}`).style.display = "none";
-            document.getElementById(`input-${id}`).style.display = "inline-block";
-            document.getElementById(`save-${id}`).style.display = "inline-block";
-        };
+    // Función para cerrar sesión
+    window.cerrarSesion = function() {
+      signOut(auth).then(() => {
+        document.getElementById("login-container").style.display = "block";
+        document.getElementById("user-info").style.display = "none";
+        document.getElementById("admin-section").style.display = "none";
+        isAdmin = false;
+      }).catch((error) => {
+        console.error("Error al cerrar sesión:", error);
+      });
+    };
 
-        window.guardarEdicion = async function (id) {
-            let nuevoValor = parseFloat(document.getElementById(`input-${id}`).value);
-            if (isNaN(nuevoValor)) {
-                alert("Ingrese un valor numérico válido.");
-                return;
-            }
-            await updateDoc(doc(db, "productos", id), { valor: nuevoValor });
-        };
+    // Verificar el estado de autenticación al cargar la página
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById("login-container").style.display = "none";
+        document.getElementById("user-info").style.display = "block";
+        document.getElementById("user-email").textContent = "Usuario: " + user.email;
+        checkAdmin(user);
+      } else {
+        document.getElementById("login-container").style.display = "block";
+        document.getElementById("user-info").style.display = "none";
+        document.getElementById("admin-section").style.display = "none";
+        isAdmin = false;
+      }
+    });
 
-        window.confirmarEliminacion = function (id) {
-            if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
-                eliminarProducto(id);
-            }
-        };
+    // Función para determinar si el usuario es el admin
+    function checkAdmin(user) {
+      if (user.uid === allowedUID) {
+        isAdmin = true;
+        document.getElementById("admin-section").style.display = "block";
+      } else {
+        isAdmin = false;
+        document.getElementById("admin-section").style.display = "none";
+      }
+    }
 
-        window.eliminarProducto = async function (id) {
-            await deleteDoc(doc(db, "productos", id));
-        };
-    </script>
+    // Función para agregar un producto (solo se muestra si es admin)
+    window.agregarProducto = async function () {
+      let nombre = document.getElementById("nombreProducto").value.trim();
+      let valor = parseFloat(document.getElementById("valorUnitario").value);
+      if (nombre === "" || isNaN(valor)) {
+        alert("Por favor, ingrese datos válidos.");
+        return;
+      }
+      await addDoc(collection(db, "productos"), { nombre, valor });
+      document.getElementById("nombreProducto").value = "";
+      document.getElementById("valorUnitario").value = "";
+      document.getElementById("nombreProducto").focus();
+    };
+
+    // Función para pasar al siguiente campo con "Enter"
+    window.pasarAlSiguiente = function (event, siguienteId) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        document.getElementById(siguienteId).focus();
+      }
+    };
+
+    // Consultar y mostrar productos en la tabla
+    const q = query(collection(db, "productos"), orderBy("nombre"));
+    onSnapshot(q, (snapshot) => {
+      let tabla = document.getElementById("tablaProductos");
+      tabla.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        let data = docSnap.data();
+        let id = docSnap.id;
+        let calculo = (data.valor / 0.7).toFixed(2);
+
+        // Si es admin, se muestran los botones de editar y eliminar;
+        // de lo contrario, se muestra "Solo lectura"
+        let acciones = isAdmin ? `
+          <button class="edit-btn" onclick="habilitarEdicion('${id}')">Editar</button>
+          <button class="save-btn" id="save-${id}" onclick="guardarEdicion('${id}')">Guardar</button>
+          <button class="delete-btn" onclick="confirmarEliminacion('${id}')">Eliminar</button>
+        ` : "Solo lectura";
+
+        let fila = `<tr>
+          <td>${data.nombre}</td>
+          <td>
+            <span id="valor-${id}">${data.valor}</span>
+            <input type="number" id="input-${id}" value="${data.valor}" style="display:none; width:80px;">
+          </td>
+          <td id="calculo-${id}">${calculo}</td>
+          <td>
+            ${acciones}
+          </td>
+        </tr>`;
+        tabla.innerHTML += fila;
+      });
+    });
+
+    // Funciones para editar y eliminar (solo para admin)
+    window.habilitarEdicion = function (id) {
+      document.getElementById(`valor-${id}`).style.display = "none";
+      document.getElementById(`input-${id}`).style.display = "inline-block";
+      document.getElementById(`save-${id}`).style.display = "inline-block";
+    };
+
+    window.guardarEdicion = async function (id) {
+      let nuevoValor = parseFloat(document.getElementById(`input-${id}`).value);
+      if (isNaN(nuevoValor)) {
+        alert("Ingrese un valor numérico válido.");
+        return;
+      }
+      await updateDoc(doc(db, "productos", id), { valor: nuevoValor });
+    };
+
+    window.confirmarEliminacion = function (id) {
+      if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+        eliminarProducto(id);
+      }
+    };
+
+    window.eliminarProducto = async function (id) {
+      await deleteDoc(doc(db, "productos", id));
+    };
+  </script>
 </body>
 </html>
