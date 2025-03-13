@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -205,13 +205,13 @@
 
         // Si es admin, se muestran los botones de editar y eliminar;
         // de lo contrario, se muestra "Solo lectura"
-        let acciones = isAdmin ? `
+        let acciones = isAdmin ? 
           <button class="edit-btn" onclick="habilitarEdicion('${id}')">Editar</button>
           <button class="save-btn" id="save-${id}" onclick="guardarEdicion('${id}')">Guardar</button>
           <button class="delete-btn" onclick="confirmarEliminacion('${id}')">Eliminar</button>
-        ` : "Solo lectura";
+         : "Solo lectura";
 
-        let fila = `<tr>
+        let fila = <tr>
           <td>${data.nombre}</td>
           <td>
             <span id="valor-${id}">${data.valor}</span>
@@ -221,20 +221,20 @@
           <td>
             ${acciones}
           </td>
-        </tr>`;
+        </tr>;
         tabla.innerHTML += fila;
       });
     });
 
     // Funciones para editar y eliminar (solo para admin)
     window.habilitarEdicion = function (id) {
-      document.getElementById(`valor-${id}`).style.display = "none";
-      document.getElementById(`input-${id}`).style.display = "inline-block";
-      document.getElementById(`save-${id}`).style.display = "inline-block";
+      document.getElementById(valor-${id}).style.display = "none";
+      document.getElementById(input-${id}).style.display = "inline-block";
+      document.getElementById(save-${id}).style.display = "inline-block";
     };
 
     window.guardarEdicion = async function (id) {
-      let nuevoValor = parseFloat(document.getElementById(`input-${id}`).value);
+      let nuevoValor = parseFloat(document.getElementById(input-${id}).value);
       if (isNaN(nuevoValor)) {
         alert("Ingrese un valor numérico válido.");
         return;
